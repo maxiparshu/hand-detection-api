@@ -1,52 +1,48 @@
 import json
 import os
 import random
-
 import cv2
 import numpy as np
 from mediapipe import Image, ImageFormat
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-GESTURES = ['like', 'dislike', 'stop', 'ok', 'peace', 'rock',
-            '1', '2', '3', '4', '5']
 SAMPLES_PER_GESTURE = 50
 ANGLES = [-15, 15, -20, 20, 10]
 PADDING = 25
-DATASET_PATH = "../hand_dataset"
-NOISE_LEVEL = 0.008
+NOISE_RANGE = (0.003, 0.018)
+
+DATASET_PATH = "dataset/asl"
+ASL_FOLDER = "../gestures_original/asl"
 
 
-def rotate_image(image, angle):
-    h, w = image.shape[:2]
-    M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-    return cv2.warpAffine(image, M, (w, h))
+def rotate_landmarks_math(lms_list, angle_deg):
+    angle_rad = np.radians(-angle_deg)
+    c, s = np.cos(angle_rad), np.sin(angle_rad)
+    rotated = []
+    for x, y, z in lms_list:
+        nx = (x - 0.5) * c - (y - 0.5) * s + 0.5
+        ny = (x - 0.5) * s + (y - 0.5) * c + 0.5
+        rotated.append([nx, ny, z])
+    return rotated
 
 
-def normalize_landmarks(landmarks):
-    lms = np.array([[lm.x, lm.y, lm.z] for lm in landmarks])
-    base = lms[0]
-    translated = lms - base
-    max_dist = np.max(np.linalg.norm(translated, axis=1))
-    if max_dist > 0:
-        normalized = translated / max_dist
-    else:
-        normalized = translated
-    return normalized.tolist()
+def add_random_noise(lms_list, intensity_range):
+    current_level = random.uniform(*intensity_range)
 
-
-def mirror_landmarks(lms_list):
-    return [[-lm[0], lm[1], lm[2]] for lm in lms_list]
-
-
-def add_noise(lms_list, level):
-    return [[lm[0] + random.uniform(-level, level),
-             lm[1] + random.uniform(-level, level),
-             lm[2] + random.uniform(-level, level)] for lm in lms_list]
-
-
+    return [[x + random.uniform(-current_level, current_level),
+             y + random.uniform(-current_level, current_level),
+             z + random.uniform(-current_level, current_level)] for x, y, z in lms_list]
 
 if __name__ == "__main__":
+    os.makedirs(DATASET_PATH, exist_ok=True)
+
+    if not os.path.exists(ASL_FOLDER):
+        print(f"Ошибка: Папка {ASL_FOLDER} не найдена!")
+        exit()
+
+    image_files = [f for f in os.listdir(ASL_FOLDER) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+
     base_options = python.BaseOptions(model_asset_path="models/hand_landmarker.task")
     options = vision.HandLandmarkerOptions(
         base_options=base_options,
@@ -55,23 +51,24 @@ if __name__ == "__main__":
     )
     detector = vision.HandLandmarker.create_from_options(options)
 
-    for g in GESTURES:
-        os.makedirs(os.path.join(DATASET_PATH, g), exist_ok=True)
-
     cap = cv2.VideoCapture(0)
 
-    for gesture in GESTURES:
-        print(f"\nЗАПИСЬ: {gesture.upper()} (S - снять, Space - пропустить жест, Q - выход)")
+    for file_name in image_files:
+        gesture = os.path.splitext(file_name)[0]
+        gesture_dir = os.path.join(DATASET_PATH, gesture)
+        os.makedirs(gesture_dir, exist_ok=True)
+
+        sample_img = cv2.imread(os.path.join(ASL_FOLDER, file_name))
+
         count = 0
         gesture_data = {}
-        skip_gesture = False
 
         while count < SAMPLES_PER_GESTURE:
             ret, frame = cap.read()
             if not ret: break
 
-            display_frame = cv2.flip(frame, 1)
             h, w = frame.shape[:2]
+            display_frame = cv2.flip(frame, 1)
 
             mp_image = Image(image_format=ImageFormat.SRGB, data=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             result = detector.detect(mp_image)
@@ -80,68 +77,56 @@ if __name__ == "__main__":
                 lms = result.hand_landmarks[0]
                 xs = [int(lm.x * w) for lm in lms]
                 ys = [int(lm.y * h) for lm in lms]
-                x_min, y_min = max(0, min(xs) - PADDING), max(0, min(ys) - PADDING)
-                x_max, y_max = min(w, max(xs) + PADDING), min(h, max(ys) + PADDING)
-                cv2.rectangle(display_frame, (w - x_max, y_min), (w - x_min, y_max), (0, 255, 0), 2)
+                cv2.rectangle(display_frame, (w - max(xs) - PADDING, min(ys) - PADDING),
+                              (w - min(xs) + PADDING, max(ys) + PADDING), (0, 255, 0), 2)
 
-                key = cv2.waitKey(1)
+            sample_h = h
+            sample_w = int(sample_img.shape[1] * (sample_h / sample_img.shape[0]))
+            resized_sample = cv2.resize(sample_img, (sample_w, sample_h))
 
-                if key & 0xFF == ord('s'):
-                    norm_lms = normalize_landmarks(lms)
-                    base_name = f"{gesture}_{count}"
+            cv2.putText(display_frame, f"GESTURE: {gesture}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(display_frame, f"COUNT: {count}/{SAMPLES_PER_GESTURE}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                        (0, 255, 0), 2)
+            cv2.putText(resized_sample, "ETALON", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
-                    crop = frame[y_min:y_max, x_min:x_max]
-                    if crop.size > 0:
-                        crop_resized = cv2.resize(crop, (224, 224))
-                        cv2.imwrite(os.path.join(DATASET_PATH, gesture, f"{base_name}_orig.jpg"), crop_resized)
-                    gesture_data[f"{base_name}_orig.jpg"] = norm_lms
+            combined_view = np.hstack((display_frame, resized_sample))
+            cv2.imshow("Data Collector", combined_view)
 
-                    for ang in ANGLES:
-                        key_name = f"{base_name}_ang{ang}.jpg"
-                        gesture_data[key_name] = norm_lms
-                        if count == 0:
-                            rot_img = rotate_image(frame, ang)
-                            r_crop = rot_img[y_min:y_max, x_min:x_max]
-                            if r_crop.size > 0:
-                                cv2.imwrite(os.path.join(DATASET_PATH, gesture, key_name),
-                                            cv2.resize(r_crop, (224, 224)))
+            key = cv2.waitKey(1)
+            if key == ord('s') and result.hand_landmarks:
+                raw_lms = [[lm.x, lm.y, lm.z] for lm in lms]
+                base_name = f"{gesture}_{count}"
 
-                    gesture_data[f"{base_name}_mir.jpg"] = mirror_landmarks(norm_lms)
-                    if count == 0 and crop.size > 0:
-                        cv2.imwrite(os.path.join(DATASET_PATH, gesture, f"{base_name}_mir.jpg"),
-                                    cv2.flip(crop_resized, 1))
+                orig_img_name = f"{base_name}_orig.jpg"
+                cv2.imwrite(os.path.join(gesture_dir, orig_img_name), frame)
+                gesture_data[orig_img_name] = raw_lms
 
-                    gesture_data[f"{base_name}_noise.jpg"] = add_noise(norm_lms, NOISE_LEVEL)
+                for ang in ANGLES:
+                    key_name = f"{base_name}_ang{ang}.jpg"
+                    gesture_data[key_name] = rotate_landmarks_math(raw_lms, ang)
+                    if count == 0:
+                        M = cv2.getRotationMatrix2D((w // 2, h // 2), ang, 1.0)
+                        cv2.imwrite(os.path.join(gesture_dir, key_name), cv2.warpAffine(frame, M, (w, h)))
 
-                    count += 1
-                    print(f"Записано: {count}/{SAMPLES_PER_GESTURE}", end="\r")
+                mir_key = f"{base_name}_mir.jpg"
+                gesture_data[mir_key] = [[1.0 - x, y, z] for x, y, z in raw_lms]
+                if count == 0:
+                    cv2.imwrite(os.path.join(gesture_dir, mir_key), cv2.flip(frame, 1))
 
-                elif key & 0xFF == ord(' '):
-                    print(f"\nЖест {gesture} пропущен пользователем.")
-                    skip_gesture = True
-                    break
+                for i in range(5):
+                    noise_key = f"{base_name}_noise_{i}.jpg"
+                    gesture_data[noise_key] = add_random_noise(raw_lms, NOISE_RANGE)
+                count += 1
 
-                elif key & 0xFF == ord('q'):
-                    cap.release()
-                    cv2.destroyAllWindows()
-                    exit()
-
-            cv2.putText(display_frame, f"REC: {gesture} | {count}/{SAMPLES_PER_GESTURE}",
-                        (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.imshow("Data Collector", display_frame)
-
-            if not result.hand_landmarks:
-                key = cv2.waitKey(1)
-                if key & 0xFF == ord(' '):
-                    skip_gesture = True
-                    break
-                elif key & 0xFF == ord('q'):
-                    cap.release()
-                    cv2.destroyAllWindows()
-                    exit()
+            elif key == ord(' '):
+                break
+            elif key == ord('q'):
+                cap.release()
+                cv2.destroyAllWindows()
+                exit()
 
         if gesture_data:
-            with open(os.path.join(DATASET_PATH, gesture, "results.json"), "w") as f:
+            with open(os.path.join(gesture_dir, "results.json"), "w") as f:
                 json.dump(gesture_data, f, indent=4)
 
     cap.release()

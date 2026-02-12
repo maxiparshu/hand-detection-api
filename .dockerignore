@@ -1,0 +1,13 @@
+venv/
+.git/
+__pycache__/
+*.pyc
+
+a.py
+test_local.py
+neural_network/generate.py
+neural_network/training_log.txt
+real-esrgan-x4plus-128.onnx
+
+Dockerfile
+.dockerignore

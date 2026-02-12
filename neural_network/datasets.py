@@ -1,51 +1,71 @@
 import json
 import os
-
 import numpy as np
-from sklearn.utils import shuffle
 
 
-def load_hand_data(dataset_path="hand_dataset"):
-    gestures = [name for name in os.listdir(dataset_path)
-                if os.path.isdir(os.path.join(dataset_path, name))]
+def normalize_landmarks(landmarks):
+    lms = np.array(landmarks)
+
+    if lms.shape == (63,):
+        lms = lms.reshape(21, 3)
+
+    lms = lms - lms[0]
+
+    max_val = np.max(np.abs(lms))
+    if max_val > 0:
+        lms = lms / max_val
+
+    return lms.flatten()
+
+
+def load_hand_data(dataset_path="asl"):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    dataset_abs_path = os.path.join(base_path, "dataset", dataset_path)
+
+    if not os.path.exists(dataset_abs_path):
+        print(f"Ошибка: Путь {dataset_abs_path} не найден!")
+        return (None, None), (None, None), []
+
+    gestures = sorted([name for name in os.listdir(dataset_abs_path)
+                       if os.path.isdir(os.path.join(dataset_abs_path, name))])
 
     x_all = []
     y_all = []
-
     num_classes = len(gestures)
 
     for i, gesture_name in enumerate(gestures):
-        json_path = os.path.join(dataset_path, gesture_name, "results.json")
-
+        json_path = os.path.join(dataset_abs_path, gesture_name, "results.json")
         if not os.path.exists(json_path):
-            print(f"Предупреждение: {json_path} не найден.")
             continue
 
         with open(json_path, 'r') as f:
             data = json.load(f)
 
         for img_name, landmarks in data.items():
-            flatten_lms = np.array(landmarks).flatten()
+            processed_lms = normalize_landmarks(landmarks)
 
-            x_all.append(flatten_lms)
+            if processed_lms.shape[0] != 63:
+                continue
+
+            x_all.append(processed_lms)
 
             one_hot = np.zeros(num_classes)
             one_hot[i] = 1.0
             y_all.append(one_hot)
 
-    x_all = np.array(x_all)
-    y_all = np.array(y_all)
+    x_all = np.array(x_all, dtype=np.float32)
+    y_all = np.array(y_all, dtype=np.float32)
 
-    x_all, y_all = shuffle(x_all, y_all, random_state=42)
+    indices = np.arange(len(x_all))
+    np.random.seed(42)
+    np.random.shuffle(indices)
+    x_all = x_all[indices]
+    y_all = y_all[indices]
 
     split_index = int(len(x_all) * 0.8)
 
-    x_train, x_test = x_all[:split_index], x_all[split_index:]
-    y_train, y_test = y_all[:split_index], y_all[split_index:]
+    print(f"Загружено: {len(x_all)} примеров для {num_classes} классов.")
 
-    return (x_train, y_train), (x_test, y_test), gestures
-
-
-def data_len():
-    datasets = "hand_dataset"
-    return len([name for name in os.listdir(datasets) if os.path.isdir(os.path.join(datasets, name))])
+    return (x_all[:split_index], y_all[:split_index]), \
+        (x_all[split_index:], y_all[split_index:]), \
+        gestures

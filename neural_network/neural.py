@@ -1,16 +1,15 @@
 import os
 from datetime import datetime
-
 import numpy as np
 
-from activation import ReLU, Softmax
-from datasets import load_hand_data
-from dense import Dense, Dropout
-from loss import CrossEntropy
+from .activation import ReLU, Softmax
+from .datasets import load_hand_data
+from .dense import Dense, Dropout
+from .loss import CrossEntropy
 
 
 class Neural:
-    def __init__(self, input_len=63, output_len=5, reg_lambda=0.01, dropout_p=0.4, learning_rate=0.01):
+    def __init__(self, input_len=63, output_len=5, reg_lambda=0.01, dropout_p=0.4, learning_rate=0.01, model_name="default"):
         h1_len = 128
         h2_len = 64
 
@@ -31,6 +30,7 @@ class Neural:
 
         self.loss_function = CrossEntropy()
         self.names = []
+        self.model_name = model_name
         self.log_file = "training_log.txt"
 
     def forward(self, x, train=True):
@@ -78,8 +78,8 @@ class Neural:
 
         return name, confidence_pct
 
-    def train(self, epochs=500, batch_size=32):
-        (self.x_train, self.y_train), (self.x_test, self.y_test), self.names = load_hand_data()
+    def train(self, epochs=500, batch_size=32, dataset_name="hand_dataset"):
+        (self.x_train, self.y_train), (self.x_test, self.y_test), self.names = load_hand_data(dataset_name)
         print(f"Запуск обучения: {len(self.x_train)} примеров. Слои: 128 -> 64")
 
         for epoch in range(epochs):
@@ -104,23 +104,34 @@ class Neural:
         self.save_model()
 
     def save_model(self):
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_path, "models", self.model_name + ".npz")
+
         # Получаем веса из всех трех слоев
         w1, b1 = self.layer1.get_weight()
         w2, b2 = self.layer2.get_weight()
         w3, b3 = self.output_layer.get_weight()
 
-        np.savez("gesture_model.npz", W1=w1, b1=b1, W2=w2, b2=b2, W3=w3, b3=b3, names=np.array(self.names))
+        np.savez(model_path, W1=w1, b1=b1, W2=w2, b2=b2, W3=w3, b3=b3, names=np.array(self.names))
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] Модель и имена ({self.names}) сохранены в gesture_model.npz")
+        print(f"[{timestamp}] Модель и имена ({self.names}) сохранены {self.model_name}")
 
     def load_model(self):
-        if os.path.exists("gesture_model.npz"):
-            data = np.load("gesture_model.npz", allow_pickle=True)
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        model_path = os.path.join(base_path, "models", self.model_name + ".npz")
+
+        print(model_path)
+
+        if os.path.exists(model_path):
+            data = np.load(model_path, allow_pickle=True)
             self.layer1.set_weight(data['W1'], data['b1'])
             self.layer2.set_weight(data['W2'], data['b2'])
             self.output_layer.set_weight(data['W3'], data['b3'])
             self.names = data['names'].tolist()
             self.output_len = len(self.names)
-            print(f"Модель и имена ({self.names})")
+            print(f"Модель загружена успешно. Имена: ({self.names})")
             return True
         return False
+
+    def get_model(self):
+        return self.model_name

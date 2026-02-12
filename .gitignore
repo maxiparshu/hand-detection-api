@@ -1,5 +1,7 @@
 .idea
 .buildozer
 bin
-binary_matrix.txt
+venv
+temp/
+training_log.txt
 __pycache__
