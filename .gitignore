@@ -1,0 +1,5 @@
+.idea
+.buildozer
+bin
+binary_matrix.txt
+__pycache__
