@@ -34,6 +34,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+async def root():
+    return {"message": "Hand Detection API is running!", "docs": "/docs"}
+
 app.include_router(inference.router)
 app.include_router(setting_models.router)
 app.include_router(training.router)

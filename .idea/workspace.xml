@@ -5,27 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bdf1819a-145b-4639-814c-7e8e99a0d034" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/diploma.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main_server.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/neural_network/activation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/neural_network/datasets.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/neural_network/dense.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/neural_network/generate.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/neural_network/loss.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/neural_network/neural.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/real-esrgan-x4plus-128.onnx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements_docker.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/inference.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/setting_models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/training.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test_local.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,7 +46,7 @@
     &quot;Python.test_local.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;last_opened_file_path&quot;: &quot;D:/diploma&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
