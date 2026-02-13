@@ -25,3 +25,7 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t gesture-api .
+
+      - name: Trigger Render Deploy
+        if: success() 
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
