@@ -42,7 +42,6 @@ class Neural:
         out = self.activation2.forward(out)
         out = self.dropout2.forward(out, train=train)
 
-        # Выход
         out = self.output_layer.forward(out)
         return self.activation_final.forward(out)
 
@@ -107,7 +106,6 @@ class Neural:
         base_path = os.path.dirname(os.path.abspath(__file__))
         model_path = os.path.join(base_path, "models", self.model_name + ".npz")
 
-        # Получаем веса из всех трех слоев
         w1, b1 = self.layer1.get_weight()
         w2, b2 = self.layer2.get_weight()
         w3, b3 = self.output_layer.get_weight()

@@ -34,6 +34,7 @@ def add_random_noise(lms_list, intensity_range):
              y + random.uniform(-current_level, current_level),
              z + random.uniform(-current_level, current_level)] for x, y, z in lms_list]
 
+
 if __name__ == "__main__":
     os.makedirs(DATASET_PATH, exist_ok=True)
 
@@ -65,7 +66,8 @@ if __name__ == "__main__":
 
         while count < SAMPLES_PER_GESTURE:
             ret, frame = cap.read()
-            if not ret: break
+            if not ret:
+                break
 
             h, w = frame.shape[:2]
             display_frame = cv2.flip(frame, 1)
@@ -94,6 +96,7 @@ if __name__ == "__main__":
 
             key = cv2.waitKey(1)
             if key == ord('s') and result.hand_landmarks:
+                lms = result.hand_landmarks[0]
                 raw_lms = [[lm.x, lm.y, lm.z] for lm in lms]
                 base_name = f"{gesture}_{count}"
 

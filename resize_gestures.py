@@ -55,7 +55,6 @@ def main():
                 Image.LANCZOS
             )
 
-            # --- сохранение ---
             out_img.save(dst_path, "PNG", optimize=True)
 
         except Exception as e:

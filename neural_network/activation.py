@@ -47,5 +47,6 @@ class Softmax:
         self.out = exp_x / np.sum(exp_x, axis=1, keepdims=True)
         return self.out
 
-    def backward(self, dE):
+    @staticmethod
+    def backward(dE):
         return dE
