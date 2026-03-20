@@ -37,10 +37,16 @@ async def get_random_gesture_batch(user_id: str, count: int = 5):
 
     selected_images = random.sample(all_images, count)
 
+    valid_names = set(user_neural.get_names())
+
     for img_name in selected_images:
         remaining = [i for i in all_images if i != img_name]
-        extra_img = random.choice(remaining)
 
+        valid_choices = [i for i in remaining if Path(i).stem in valid_names]
+        if not valid_choices:
+            raise HTTPException(status_code=400, detail="No matching images in neural names")
+
+        extra_img = random.choice(valid_choices)
         src_path = model_path / img_name
         dst_path = user_temp_dir / img_name
 
@@ -54,13 +60,13 @@ async def get_random_gesture_batch(user_id: str, count: int = 5):
             image.save(dst_path, format="PNG")
 
         batch_result.append({
-            "model": model_name,
-            "gesture_name": Path(img_name).stem,
-            "extra_gesture_name": Path(extra_img).stem,
-            "image_path": f"/temp/{user_id}/{img_name}"
+            "gestureName": Path(img_name).stem,
+            "extraGestureName": Path(extra_img).stem,
+            "imagePath": f"/temp/{user_id}/{img_name}"
         })
 
     return batch_result
+
 
 @router.get("/all-gestures/{user_id}")
 async def get_all_gestures(user_id: str):
