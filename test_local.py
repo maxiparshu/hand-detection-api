@@ -7,8 +7,18 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from neural_network.datasets import normalize_sequence
-from neural_network.generate_dynamic import generate_dataset
+from neural_network.generate_dynamic import DynamicDatasetGenerator
 from neural_network.neural import Neural
+
+
+def ask_model_name():
+    while True:
+        name = input("Введите название модели (например: asl): ").strip().lower()
+
+        if name.endswith("_dynamic"):
+            name = name.replace("_dynamic", "")
+
+        return name, f"{name}_dynamic"
 
 
 def main():
@@ -17,23 +27,28 @@ def main():
     print("[r] - Распознавание (Run)")
     mode = input("Выберите режим: ").lower()
 
-    NAME = "asl_dynamic"
-    FRAMES_WINDOW = 20  # Окно в 20 кадров
+    name, model_name = ask_model_name()
+    FRAMES_WINDOW = 20
     MODEL_PATH = "neural_network/models/hand_landmarker.task"
 
-    dataset_path = os.path.join("neural_network", "dataset", NAME)
+    dataset_path = os.path.join("neural_network", "dataset", model_name)
+    print(dataset_path)
     gestures = []
     if os.path.exists(dataset_path):
         gestures = [n for n in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, n))]
 
-    nn = Neural(frames=FRAMES_WINDOW, output_len=len(gestures), model_name=NAME)
+    nn = Neural(frames=FRAMES_WINDOW, output_len=len(gestures), model_name=model_name)
 
     if mode == 't':
         mode = input("Новый датасет(y): ").lower()
         if mode == 'y':
-            generate_dataset()
-        print(f"\nНачало обучения на датасете: {NAME}")
-        nn.train(epochs=500, batch_size=32, dataset_name=NAME)
+            generator = DynamicDatasetGenerator(model_name=name,
+                                                dataset_path=dataset_path,
+                                                gestures_folder="gestures_original//",
+                                                model_asset_path=MODEL_PATH)
+            generator.generate_dataset()
+        print(f"\nНачало обучения на датасете: {model_name}")
+        nn.train(epochs=500, batch_size=32)
         print("Обучение завершено. Модель сохранена.")
 
     elif mode == 'r':

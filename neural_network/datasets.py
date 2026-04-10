@@ -1,13 +1,14 @@
 import json
 import os
-
 import numpy as np
 
 
 def normalize_sequence(sequence):
     normalized_seq = []
+
     for landmarks in sequence:
         lms = np.array(landmarks)
+
         if lms.shape == (63,):
             lms = lms.reshape(21, 3)
 
@@ -22,57 +23,72 @@ def normalize_sequence(sequence):
     return np.array(normalized_seq).flatten()
 
 
-def load_hand_data(dataset_path="asl_dynamic"):
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    dataset_abs_path = os.path.join(base_path, "dataset", dataset_path)
+class HandDataLoader:
 
-    if not os.path.exists(dataset_abs_path):
-        print(f"Ошибка: Путь {dataset_abs_path} не найден!")
-        return (None, None), (None, None), []
+    def __init__(self, dataset_path="asl_dynamic"):
+        self.dataset_path = dataset_path
+        self.EXPECTED_LEN = 20 * 63
+        self.base_path = os.path.dirname(os.path.abspath(__file__))
+        self.dataset_abs_path = os.path.join(self.base_path, "dataset", dataset_path)
 
-    gestures = sorted([name for name in os.listdir(dataset_abs_path)
-                       if os.path.isdir(os.path.join(dataset_abs_path, name))])
+    def load_data(self):
+        if not os.path.exists(self.dataset_abs_path):
+            print(f"Ошибка: Путь {self.dataset_abs_path} не найден!")
+            return (None, None), (None, None), []
 
-    x_all = []
-    y_all = []
-    num_classes = len(gestures)
+        gestures = sorted([
+            name for name in os.listdir(self.dataset_abs_path)
+            if os.path.isdir(os.path.join(self.dataset_abs_path, name))
+        ])
 
-    EXPECTED_LEN = 20 * 63
+        x_all = []
+        y_all = []
+        num_classes = len(gestures)
 
-    for i, gesture_name in enumerate(gestures):
-        json_path = os.path.join(dataset_abs_path, gesture_name, "results_dynamic.json")
-        if not os.path.exists(json_path):
-            continue
+        for i, gesture_name in enumerate(gestures):
+            json_path = os.path.join(
+                self.dataset_abs_path,
+                gesture_name,
+                "results_dynamic.json"
+            )
 
-        with open(json_path, 'r') as f:
-            data = json.load(f)
-
-        for sample_name, sequence in data.items():
-            processed_vector = normalize_sequence(sequence)
-
-            if processed_vector.shape[0] != EXPECTED_LEN:
+            if not os.path.exists(json_path):
                 continue
 
-            x_all.append(processed_vector)
+            with open(json_path, 'r') as f:
+                data = json.load(f)
 
-            one_hot = np.zeros(num_classes)
-            one_hot[i] = 1.0
-            y_all.append(one_hot)
+            for _, sequence in data.items():
+                processed_vector = normalize_sequence(sequence)
 
-    x_all = np.array(x_all, dtype=np.float32)
-    y_all = np.array(y_all, dtype=np.float32)
+                if processed_vector.shape[0] != self.EXPECTED_LEN:
+                    continue
 
-    indices = np.arange(len(x_all))
-    np.random.seed(42)
-    np.random.shuffle(indices)
-    x_all = x_all[indices]
-    y_all = y_all[indices]
+                x_all.append(processed_vector)
 
-    split_index = int(len(x_all) * 0.8)
+                one_hot = np.zeros(num_classes)
+                one_hot[i] = 1.0
+                y_all.append(one_hot)
 
-    print(f"Загружено: {len(x_all)} динамических примеров ({EXPECTED_LEN} входов каждый).")
-    print(f"Классы: {gestures}")
+        x_all = np.array(x_all, dtype=np.float32)
+        y_all = np.array(y_all, dtype=np.float32)
 
-    return (x_all[:split_index], y_all[:split_index]), \
-        (x_all[split_index:], y_all[split_index:]), \
-        gestures
+        # перемешивание
+        indices = np.arange(len(x_all))
+        np.random.seed(42)
+        np.random.shuffle(indices)
+
+        x_all = x_all[indices]
+        y_all = y_all[indices]
+
+        # split train/test
+        split_index = int(len(x_all) * 0.8)
+
+        print(f"Загружено: {len(x_all)} динамических примеров ({self.EXPECTED_LEN} входов каждый).")
+        print(f"Классы: {gestures}")
+
+        return (
+            (x_all[:split_index], y_all[:split_index]),
+            (x_all[split_index:], y_all[split_index:]),
+            gestures
+        )

@@ -20,7 +20,6 @@ async def predict(device_id: str = Query(...), data: HandsInput = None):
 
     if len(data.hands) != 20:
         raise HTTPException(400, f"Need 20 frames, got {len(data.hands)}")
-
     normalized = normalize_sequence(data.hands)
 
     name, conf = model.predict_name(normalized)

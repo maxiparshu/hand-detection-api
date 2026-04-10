@@ -3,7 +3,7 @@ from datetime import datetime
 import numpy as np
 
 from .activation import ReLU, Softmax
-from .datasets import load_hand_data
+from .datasets import HandDataLoader
 from .dense import Dense, Dropout
 from .loss import CrossEntropy
 
@@ -76,36 +76,69 @@ class Neural:
         name = self.names[class_idx] if class_idx < len(self.names) else "Unknown"
         return name, confidence * 100
 
-    def train(self, epochs=500, batch_size=32, dataset_name="asl_dynamic"):
-        (x_train, y_train), (x_test, y_test), self.names = load_hand_data(dataset_name)
+    def train(self, epochs=500, batch_size=32, patience=50):
+        dataset_loader = HandDataLoader(self.model_name)
+        (x_train, y_train), (x_test, y_test), self.names = dataset_loader.load_data()
 
         if len(self.names) != self.output_len:
             print(f"Корректировка выходного слоя под {len(self.names)} классов...")
-            h2_len = self.layer2.get_weight()[0].shape[1]  # Берем текущий размер h2
+            h2_len = self.layer2.get_weight()[0].shape[1]
             self.output_layer = Dense(h2_len, len(self.names))
             self.output_len = len(self.names)
 
-        print(f"Запуск динамического обучения: {len(x_train)} последовательностей.")
+        print(f"Запуск обучения: {len(x_train)} трен. | {len(x_test)} тест.")
+
+        best_val_loss = float('inf')
+        best_weights = {}
+        epochs_without_improvement = 0
 
         for epoch in range(epochs):
             indices = np.arange(len(x_train))
             np.random.shuffle(indices)
             x_shf, y_shf = x_train[indices], y_train[indices]
-            total_loss = 0
 
             for i in range(0, len(x_shf), batch_size):
                 x_batch, y_batch = x_shf[i:i + batch_size], y_shf[i:i + batch_size]
                 y_pred = self.forward(x_batch, train=True)
-                total_loss += self.loss_function.forward_batch(y_batch, y_pred)
+                self.loss_function.forward_batch(y_batch, y_pred)
                 self.backward(x_batch.shape[0])
+
+            y_val_pred = self.forward(x_test, train=False)
+            current_val_loss = self.loss_function.forward_batch(y_test, y_val_pred)
+
+            if current_val_loss < best_val_loss:
+                best_val_loss = current_val_loss
+                epochs_without_improvement = 0
+
+                w1, b1 = self.layer1.get_weight()
+                w2, b2 = self.layer2.get_weight()
+                w3, b3 = self.output_layer.get_weight()
+
+                best_weights = {
+                    'W1': w1.copy(), 'b1': b1.copy(),
+                    'W2': w2.copy(), 'b2': b2.copy(),
+                    'W3': w3.copy(), 'b3': b3.copy()
+                }
+            else:
+                epochs_without_improvement += 1
 
             if (epoch + 1) % 150 == 0:
                 self.learning_rate *= 0.5
                 print(f"LR снижен до: {self.learning_rate}")
 
             if (epoch + 1) % 10 == 0:
-                avg_l = total_loss / (len(x_shf) / batch_size)
-                print(f"Эпоха {epoch + 1}/{epochs} | Потери: {avg_l:.5f}")
+                acc = np.mean(np.argmax(y_val_pred, axis=1) == np.argmax(y_test, axis=1)) * 100
+                print(f"Эпоха {epoch + 1}/{epochs} | Val Loss: {current_val_loss:.5f} | Acc: {acc:.2f}%")
+
+            if epochs_without_improvement >= patience:
+                print(f"Остановка: Нет улучшений в течение {patience} эпох.")
+                break
+
+        if best_weights:
+            print(f"Загрузка весов с наилучшим Val Loss: {best_val_loss:.5f}")
+            self.layer1.set_weight(best_weights['W1'], best_weights['b1'])
+            self.layer2.set_weight(best_weights['W2'], best_weights['b2'])
+            self.output_layer.set_weight(best_weights['W3'], best_weights['b3'])
 
         self.save_model()
 
@@ -124,7 +157,7 @@ class Neural:
 
     def load_model(self):
         base_path = os.path.dirname(os.path.abspath(__file__))
-        model_path = os.path.join(base_path, "models", self.model_name + "_dynamic.npz")
+        model_path = os.path.join(base_path, "models", self.model_name + ".npz")
 
         if os.path.exists(model_path):
             data = np.load(model_path, allow_pickle=True)

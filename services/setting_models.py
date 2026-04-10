@@ -3,7 +3,7 @@ import os
 from fastapi import APIRouter, HTTPException, Query
 
 from neural_network.neural import Neural
-from services.service_state import models, CONFIG_FILE
+from services.service_state import models, CONFIG_FILE, MODELS_DIR, MODEL_NAMES_MAP
 
 router = APIRouter(prefix="/models", tags=["Models"])
 
@@ -22,6 +22,29 @@ def save_state(device_id, model_name):
     state[device_id] = model_name
     with open(CONFIG_FILE, 'w') as f:
         json.dump(state, f)
+
+
+
+@router.get("/names")
+async def get_available_models():
+    if not os.path.exists(MODELS_DIR):
+        raise HTTPException(status_code=404, detail="Directory not found")
+
+    raw_files = [
+        f.removesuffix(".npz")
+        for f in os.listdir(MODELS_DIR)
+        if os.path.isfile(os.path.join(MODELS_DIR, f)) and f.endswith(".npz")
+    ]
+
+    models_list = [
+        {
+            "id": name,
+            "name": MODEL_NAMES_MAP.get(name, name)
+        }
+        for name in raw_files
+    ]
+
+    return {"models": models_list}
 
 
 @router.post("/load")

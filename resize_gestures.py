@@ -31,7 +31,6 @@ def main():
             dst_path = INPUT_DIR / rel
             dst_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # --- загрузка ---
             img = Image.open(src_path).convert("RGB")
             img = img.resize((128, 128), Image.LANCZOS)
 
