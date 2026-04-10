@@ -14,6 +14,7 @@ COPY gestures/ ./gestures/
 COPY neural_network/ ./neural_network/
 COPY services/ ./services/
 
+COPY settings.json .
 COPY main_server.py .
 
 RUN mkdir -p temp
