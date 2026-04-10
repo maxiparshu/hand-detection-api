@@ -5,3 +5,5 @@ venv
 temp/
 training_log.txt
 __pycache__
+real-esrgan-x4plus-128.onnx
+resize_gestures.py
