@@ -18,7 +18,7 @@ async def get_random_gesture_batch(user_id: str, count: int = 5):
     if not user_neural:
         raise HTTPException(status_code=404, detail="User model not found")
 
-    model_name = user_neural.get_model()
+    model_name = user_neural.get_model().replace("_dynamic", "")
     model_path = GESTURES_DIR / model_name
 
     if not model_path.exists() or not model_path.is_dir():
@@ -70,7 +70,7 @@ async def get_random_gesture_batch(user_id: str, count: int = 5):
 
 @router.get("/all-gestures/{user_id}")
 async def get_all_gestures(user_id: str):
-    model_name = models.get(user_id).get_model()
+    model_name = models.get(user_id).get_model().replace("_dynamic", "")
     model_path = GESTURES_DIR / model_name
 
     files = sorted(f for f in os.listdir(model_path) if f.lower().endswith(".png"))
