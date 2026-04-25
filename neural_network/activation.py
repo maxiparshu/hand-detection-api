@@ -13,30 +13,6 @@ class ReLU:
         return dE * (self.x > 0).astype(np.float32)
 
 
-class Sigmoid:
-    def __init__(self):
-        self.out = None
-
-    def forward(self, x):
-        self.out = 1.0 / (1.0 + np.exp(-x))
-        return self.out
-
-    def backward(self, dE):
-        return dE * (self.out * (1.0 - self.out))
-
-
-class Tanh:
-    def __init__(self):
-        self.out = None
-
-    def forward(self, x):
-        self.out = np.tanh(x)
-        return self.out
-
-    def backward(self, dE):
-        return dE * (1.0 - self.out ** 2)
-
-
 class Softmax:
     def __init__(self):
         self.out = None

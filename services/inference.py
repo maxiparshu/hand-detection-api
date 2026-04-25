@@ -9,26 +9,30 @@ from pydantic import BaseModel
 
 
 class HandsInput(BaseModel):
-    hands: list[list[list[float]]]
+    hands: list[list[list[list[float]]]]
+
 
 
 @router.post("/predict")
 async def predict(device_id: str = Query(...), data: HandsInput = None):
+
     model = models.get(device_id)
     if not model:
         raise HTTPException(404, "Model not loaded")
 
-    if len(data.hands) != 20:
-        raise HTTPException(400, f"Need 20 frames, got {len(data.hands)}")
-    normalized = normalize_sequence(data.hands)
+    results = []
 
-    name, conf = model.predict_name(normalized)
+    for hand in data.hands:
 
-    return {
-        "gestures": [
-            {
-                "gesture": name,
-                "confidence": conf
-            }
-        ]
-    }
+        if len(hand) != 20:
+            continue
+
+        normalized = normalize_sequence(hand)
+        name, conf = model.predict_name(normalized)
+
+        results.append({
+            "gesture": name,
+            "confidence": conf
+        })
+
+    return {"gestures": results}

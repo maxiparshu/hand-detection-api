@@ -38,7 +38,6 @@ class HandDetectionApp:
         self.app.mount("/temp", StaticFiles(directory="temp"), name="temp")
 
     def _register_events(self):
-
         @self.app.on_event("startup")
         async def startup():
             await self.on_startup()
