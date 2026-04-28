@@ -16,23 +16,35 @@ class HandsInput(BaseModel):
 @router.post("/predict")
 async def predict(device_id: str = Query(...), data: HandsInput = None):
 
-    model = models.get(device_id)
-    if not model:
-        raise HTTPException(404, "Model not loaded")
+    try:
+        model = models.get(device_id)
+        if not model:
+            raise HTTPException(404, "Model not loaded")
 
-    results = []
+        if not data or not data.hands:
+            return {"gestures": []}
 
-    for hand in data.hands:
+        hands = data.hands
 
-        if len(hand) != 20:
-            continue
+        predict_fn = model.predict_name
+        normalize = normalize_sequence
 
-        normalized = normalize_sequence(hand)
-        name, conf = model.predict_name(normalized)
+        results = []
 
-        results.append({
-            "gesture": name,
-            "confidence": conf
-        })
+        for hand in hands:
+            if len(hand) != 20:
+                continue
 
-    return {"gestures": results}
+            normalized = normalize(hand)
+            name, conf = predict_fn(normalized)
+
+            results.append({
+                "gesture": name,
+                "confidence": conf
+            })
+
+        return {"gestures": results}
+
+    except Exception as e:
+        print("ERROR:", e)
+        raise HTTPException(500, str(e))

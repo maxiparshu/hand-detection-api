@@ -4,23 +4,19 @@ import numpy as np
 
 
 def normalize_sequence(sequence):
-    normalized_seq = []
+    seq = np.asarray(sequence, dtype=np.float32)
 
-    for landmarks in sequence:
-        lms = np.array(landmarks)
+    if seq.shape[-1] == 63:
+        seq = seq.reshape(len(seq), 21, 3)
 
-        if lms.shape == (63,):
-            lms = lms.reshape(21, 3)
+    seq = seq - seq[:, 0:1, :]
 
-        lms = lms - lms[0]
+    max_vals = np.abs(seq).max(axis=(1, 2), keepdims=True)
+    max_vals[max_vals == 0] = 1
 
-        max_val = np.max(np.abs(lms))
-        if max_val > 0:
-            lms = lms / max_val
+    seq = seq / max_vals
 
-        normalized_seq.append(lms.flatten())
-
-    return np.array(normalized_seq).flatten()
+    return seq.reshape(seq.shape[0], -1).reshape(-1)
 
 
 class HandDataLoader:
@@ -73,7 +69,6 @@ class HandDataLoader:
         x_all = np.array(x_all, dtype=np.float32)
         y_all = np.array(y_all, dtype=np.float32)
 
-        # перемешивание
         indices = np.arange(len(x_all))
         np.random.seed(42)
         np.random.shuffle(indices)
@@ -81,7 +76,6 @@ class HandDataLoader:
         x_all = x_all[indices]
         y_all = y_all[indices]
 
-        # split train/test
         split_index = int(len(x_all) * 0.8)
 
         print(f"Загружено: {len(x_all)} динамических примеров ({self.EXPECTED_LEN} входов каждый).")

@@ -1,6 +1,8 @@
 import json
 import os
 import random
+from pathlib import Path
+
 import cv2
 import numpy as np
 from mediapipe import Image, ImageFormat
@@ -15,12 +17,14 @@ def normalize_sequence(lms_list):
 
 def ask_model_name():
     while True:
+        folder = input("Введите папку: ").strip()
         name = input("Введите название модели (например: asl): ").strip()
 
-        folder_path = f"../gestures_original/{name}"
+        base = Path(__file__).resolve().parent
+        folder_path = (base.parent / folder / name).resolve()
 
         if os.path.exists(folder_path):
-            return name
+            return name, folder_path
         else:
             print(f"Папка '{folder_path}' не найдена. Попробуйте снова.\n")
 
@@ -56,7 +60,7 @@ class DynamicDatasetGenerator:
         self.model_name = model_name
 
         self.dataset_path = dataset_path
-        self.gestures_folder = gestures_folder + self.model_name
+        self.gestures_folder = gestures_folder
 
         base_options = python.BaseOptions(model_asset_path=model_asset_path)
         options = vision.HandLandmarkerOptions(
@@ -203,7 +207,6 @@ class DynamicDatasetGenerator:
 
 
 if __name__ == "__main__":
-    name = ask_model_name()
-    gestures = "../gestures_original/"
-    generator = DynamicDatasetGenerator(name, gestures_folder=gestures)
+    name, folder_path = ask_model_name()
+    generator = DynamicDatasetGenerator(name, gestures_folder=folder_path)
     generator.generate_dataset()
