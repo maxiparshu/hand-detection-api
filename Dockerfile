@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements_docker.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -v -r requirements.txt
+    pip install --no-cache-dir -v -r requirements_docker.txt
 
 COPY gestures/ ./gestures/
 COPY neural_network/ ./neural_network/
