@@ -44,11 +44,11 @@ def main():
         if mode == 'y':
             generator = DynamicDatasetGenerator(model_name=name,
                                                 dataset_path=dataset_path,
-                                                gestures_folder="gestures_original//",
+                                                gestures_folder="gestures//",
                                                 model_asset_path=MODEL_PATH)
             generator.generate_dataset()
         print(f"\nНачало обучения на датасете: {model_name}")
-        nn.train(epochs=500, batch_size=32)
+        ##nn.train(epochs=500, batch_size=32)
         print("Обучение завершено. Модель сохранена.")
 
     elif mode == 'r':
