@@ -8,6 +8,5 @@ neural_network/generate_dynamic.py
 gestures_original
 neural_network/training_log.txt
 real-esrgan-x4plus-128.onnx
-
 Dockerfile
 .dockerignore
