@@ -1,0 +1,12 @@
+venv/
+.git/
+__pycache__/
+*.pyc
+resize_gestures.py
+test_local.py
+neural_network/generate_dynamic.py
+neural_network/dataset
+gestures_original
+neural_network/training_log.txt
+real-esrgan-x4plus-128.onnx
+
