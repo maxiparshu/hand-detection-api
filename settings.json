@@ -1,8 +1,0 @@
-{
-    "MODELS_DIR": "neural_network/models",
-    "MODEL_NAMES_MAP": {
-        "asl_dynamic": "Американский язык жестов",
-        "default_dynamic": "Стандартная модель",
-        "sl_alphabet": "Алфавит языка жестов"
-    }
-}
