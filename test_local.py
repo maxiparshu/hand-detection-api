@@ -2,9 +2,11 @@ import os
 from collections import deque
 
 import cv2
+import numpy as np
 from mediapipe import Image, ImageFormat
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from PIL import Image as ImagePIL, ImageDraw, ImageFont
 
 from neural_network.datasets import normalize_sequence
 from neural_network.generate_dynamic import DynamicDatasetGenerator
@@ -71,6 +73,7 @@ def main():
         confidence = 0.0
 
         print("\nРаспознавание запущено. Нажмите 'q' для выхода.")
+        font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 32)
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -109,10 +112,25 @@ def main():
                 confidence = 0.0
 
             color = (0, 255, 0) if confidence > 75 else (0, 0, 255)
+            img_pil = ImagePIL.fromarray(
+                cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            )
 
-            cv2.putText(frame, f"GESTURE: {current_prediction.upper()}", (10, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+            draw = ImageDraw.Draw(img_pil)
 
+            text = f"GESTURE: {current_prediction}"
+
+            draw.text(
+                (10, 40),
+                text,
+                font=font,
+                fill=(255, 0, 0)
+            )
+
+            frame = cv2.cvtColor(
+                np.array(img_pil),
+                cv2.COLOR_RGB2BGR
+            )
             cv2.putText(frame, f"CONF: {confidence:.1f}%", (10, 90),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 

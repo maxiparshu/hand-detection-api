@@ -1,5 +1,4 @@
 .idea
-.buildozer
 bin
 venv
 temp/
@@ -8,5 +7,3 @@ __pycache__
 real-esrgan-x4plus-128.onnx
 resize_gestures.py
 gestures_original
-./neural_network/models/russian_dynamic.npz
-./neural_network/dataset

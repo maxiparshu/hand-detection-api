@@ -159,7 +159,6 @@ class DynamicDatasetGenerator:
                     fill=(255, 0, 0)
                 )
 
-                # PIL -> OpenCV
                 display_frame = cv2.cvtColor(
                     np.array(img_pil),
                     cv2.COLOR_RGB2BGR

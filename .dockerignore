@@ -9,4 +9,3 @@ neural_network/dataset
 gestures_original
 neural_network/training_log.txt
 real-esrgan-x4plus-128.onnx
-
